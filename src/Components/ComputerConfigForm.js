@@ -13,17 +13,11 @@ const schema = yup.object().shape({
       price: yup.number().positive('Price must be positive').required('Price is required'),
       capacity: yup.string().test('capacity-required', 'Capacity is required for RAM and Storage', function(value) {
         const { type } = this.parent;
-        if (['ram', 'storage'].includes(type) && !value) {
-          return false;
-        }
-        return true;
+        return !['ram', 'storage'].includes(type) || value;
       }),
       storageType: yup.string().test('storageType-required', 'Storage type is required for Storage components', function(value) {
         const { type } = this.parent;
-        if (type === 'storage' && !value) {
-          return false;
-        }
-        return true;
+        return type !== 'storage' || value;
       }),
     })
   ).min(1, 'At least one component is required'),
@@ -47,7 +41,6 @@ const ComputerConfigForm = React.memo(() => {
 
   const [submittedData, setSubmittedData] = useState(null);
 
-  // Dynamically calculate total price
   useEffect(() => {
     const subscription = watch((value) => {
       const total = value.components.reduce((sum, component) => sum + (parseFloat(component.price) || 0), 0);
@@ -58,7 +51,6 @@ const ComputerConfigForm = React.memo(() => {
     return () => subscription.unsubscribe();
   }, [watch, setValue, getValues]);
 
-  // Effect to reset specific fields based on type
   useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (name && name.startsWith('components') && name.endsWith('type')) {
@@ -75,8 +67,8 @@ const ComputerConfigForm = React.memo(() => {
   }, [watch, setValue]);
 
   const onSubmit = (data) => {
-    console.log('Form data:', data); // Debugging: log form data
-    setSubmittedData(data); // Set state with submitted data
+    console.log('Form data:', data); 
+    setSubmittedData(data); 
   };
 
   const handleAppend = useCallback(() => {
@@ -87,8 +79,15 @@ const ComputerConfigForm = React.memo(() => {
     remove(index);
   }, [remove]);
 
-  // Use useMemo for expensive calculations
   const totalComponents = useMemo(() => fields.length, [fields]);
+
+  const handleSave = () => {
+    if (submittedData) {
+     
+      localStorage.setItem('computerConfig', JSON.stringify(submittedData));
+      console.log('Submitted Data:', submittedData);
+    }
+  };
 
   return (
     <>
@@ -173,7 +172,6 @@ const ComputerConfigForm = React.memo(() => {
                     )}
                   />
                   {errors.components?.[index]?.storageType && <p>{errors.components[index].storageType.message}</p>}
-
                 </>
               )}
 
@@ -213,6 +211,7 @@ const ComputerConfigForm = React.memo(() => {
           <p><strong>Total Price:</strong> ${submittedData.totalPrice}</p>
         </div>
       )}
+      <button onClick={handleSave}>Save</button>
     </>
   );
 });
