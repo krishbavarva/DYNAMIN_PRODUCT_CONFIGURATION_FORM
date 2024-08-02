@@ -11,8 +11,20 @@ const schema = yup.object().shape({
       type: yup.string().required('Component type is required'),
       name: yup.string().required('Component name is required'),
       price: yup.number().positive('Price must be positive').required('Price is required'),
-        capacity: yup.string().required("capacity is required"),
-        storageType: yup.string().required('storage type is required')
+      capacity: yup.string().test('capacity-required', 'Capacity is required for RAM and Storage', function(value) {
+        const { type } = this.parent;
+        if (['ram', 'storage'].includes(type) && !value) {
+          return false;
+        }
+        return true;
+      }),
+      storageType: yup.string().test('storageType-required', 'Storage type is required for Storage components', function(value) {
+        const { type } = this.parent;
+        if (type === 'storage' && !value) {
+          return false;
+        }
+        return true;
+      }),
     })
   ).min(1, 'At least one component is required'),
   totalPrice: yup.number().min(1, 'Total price must be greater than 0').required('Total price is required'),
